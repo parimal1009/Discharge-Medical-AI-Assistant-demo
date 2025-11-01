@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Discharge Medical AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            max-width: 1600px;
+            width: 100%;
+            height: 90vh;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .panel-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Left Panel - Session Info */
+        .session-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: #212529;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        /* Center Panel - Chat */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.5;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .agent-message {
+            align-self: flex-start;
+            background: #f1f3f5;
+            color: #212529;
+            border-bottom-left-radius: 4px;
+        }
+
+        .agent-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .receptionist-badge {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .clinical-badge {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 15px 20px;
+            background: #f1f3f5;
+            border-radius: 18px;
+            align-self: flex-start;
+            max-width: 80px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #adb5bd;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Right Panel - Patient Info & Sources */
+        .patient-info, .sources-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .patient-info.active, .sources-section.active {
+            display: block;
+        }
+
+        .info-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-item .info-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .info-item .info-value {
+            font-size: 14px;
+            color: #212529;
+            line-height: 1.5;
+        }
+
+        .source-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #495057;
+        }
+
+        .disclaimer {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #856404;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: Session Info -->
+        <div class="panel">
+            <div class="panel-header">Session Information</div>
+            <div class="panel-content">
+                <div class="session-info">
+                    <div class="info-card">
+                        <div class="info-label">System Status</div>
+                        <div class="info-value">
+                            <span class="status-badge" id="systemStatus">Initializing...</span>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Current Agent</div>
+                        <div class="info-value" id="currentAgent">Receptionist</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Session ID</div>
+                        <div class="info-value" id="sessionId" style="font-size: 11px; word-break: break-all;">-</div>
+                    </div>
+                    <div class="disclaimer">
+                        <strong>⚠️ Medical Disclaimer</strong><br>
+                        This AI assistant is for educational purposes only. Always consult healthcare professionals for medical advice.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Chat -->
+        <div class="panel">
+            <div class="panel-header">💬 Medical Assistant Chat</div>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message agent-message">
+                        <div class="agent-badge receptionist-badge">Receptionist</div>
+                        <div>Hello! I'm your medical receptionist assistant. May I have your full name to retrieve your discharge information?</div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            class="chat-input" 
+                            id="messageInput" 
+                            placeholder="Type your message..."
+                            autocomplete="off"
+                        >
+                        <button class="send-button" id="sendButton">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Patient Info & Sources -->
+        <div class="panel">
+            <div class="panel-header">Patient Information</div>
+            <div class="panel-content">
+                <div class="patient-info" id="patientInfo">
+                    <div id="patientDetails"></div>
+                </div>
+                <div class="sources-section" id="sourcesSection">
+                    <h3 style="font-size: 16px; margin-bottom: 15px; color: #495057;">📚 Information Sources</h3>
+                    <div id="sourcesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MedicalChatApp {
+            constructor() {
+                this.sessionId = this.generateSessionId();
+                this.currentAgent = 'receptionist';
+                this.patientName = null;
+                
+                this.chatMessages = document.getElementById('chatMessages');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.systemStatusEl = document.getElementById('systemStatus');
+                this.currentAgentEl = document.getElementById('currentAgent');
+                this.sessionIdEl = document.getElementById('sessionId');
+                this.patientInfo = document.getElementById('patientInfo');
+                this.patientDetails = document.getElementById('patientDetails');
+                this.sourcesSection = document.getElementById('sourcesSection');
+                this.sourcesList = document.getElementById('sourcesList');
+                
+                this.init();
+            }
+
+            generateSessionId() {
+                return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            init() {
+                this.sessionIdEl.textContent = this.sessionId.substring(0, 20) + '...';
+                this.checkSystemStatus();
+                
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+
+                this.messageInput.focus();
+            }
+
+            async checkSystemStatus() {
+                try {
+                    const response = await fetch('/api/status');
+                    const data = await response.json();
+                    
+                    this.systemStatusEl.textContent = 'Online';
+                    this.systemStatusEl.style.background = '#d4edda';
+                    this.systemStatusEl.style.color = '#155724';
+                } catch (error) {
+                    this.systemStatusEl.textContent = 'Offline';
+                    this.systemStatusEl.style.background = '#f8d7da';
+                    this.systemStatusEl.style.color = '#721c24';
+                }
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message) return;
+
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.setInputState(false);
+                this.showTypingIndicator();
+
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            session_id: this.sessionId,
+                            patient_name: this.patientName
+                        })
+                    });
+
+                    const data = await response.json();
+                    this.removeTypingIndicator();
+
+                    if (response.ok) {
+                        this.addMessage(data.response, 'agent', data.agent);
+
+                        if (data.patient_data) {
+                            this.updatePatientInfo(data.patient_data);
+                            this.patientName = data.patient_data.patient_name;
+                        }
+
+                        if (data.agent) {
+                            this.currentAgent = data.agent;
+                            this.updateSessionDisplay();
+                        }
+
+                        if (data.sources && data.sources.length > 0) {
+                            this.updateSources(data.sources);
+                        }
+
+                    } else {
+                        this.addMessage('I apologize, but I encountered an error. Please try again.', 'agent', 'system');
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.removeTypingIndicator();
+                    this.addMessage(
+                        'I apologize, but I encountered a technical issue. Please try again or refresh the page.',
+                        'agent',
+                        'system'
+                    );
+                    this.systemStatusEl.textContent = 'Error';
+                    this.systemStatusEl.style.background = '#fee2e2';
+                    this.systemStatusEl.style.color = '#991b1b';
+                }
+
+                this.setInputState(true);
+            }
+
+            addMessage(text, sender, agent = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+
+                if (sender === 'agent' && agent) {
+                    const badgeClass = agent === 'clinical' ? 'clinical-badge' : 'receptionist-badge';
+                    const agentName = agent.charAt(0).toUpperCase() + agent.slice(1);
+                    const badge = `<div class="agent-badge ${badgeClass}">${agentName} Agent</div>`;
+                    messageDiv.innerHTML = badge + this.escapeHtml(text);
+                } else {
+                    messageDiv.textContent = text;
+                }
+
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            showTypingIndicator() {
+                const indicator = document.createElement('div');
+                indicator.id = 'typingIndicator';
+                indicator.className = 'typing-indicator';
+                indicator.innerHTML = `
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                `;
+                this.chatMessages.appendChild(indicator);
+                this.scrollToBottom();
+            }
+
+            removeTypingIndicator() {
+                const indicator = document.getElementById('typingIndicator');
+                if (indicator) indicator.remove();
+            }
+
+            updatePatientInfo(patientData) {
+                this.patientDetails.innerHTML = `
+                    <div class="info-item">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value">${this.escapeHtml(patientData.patient_name)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Discharge Date:</span>
+                        <span class="info-value">${this.escapeHtml(patientData.discharge_date)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Diagnosis:</span>
+                        <span class="info-value">${this.escapeHtml(patientData.primary_diagnosis)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Medications:</span>
+                        <span class="info-value">${this.escapeHtml(patientData.medications.join(', '))}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Warning Signs:</span>
+                        <span class="info-value">${this.escapeHtml(patientData.warning_signs)}</span>
+                    </div>
+                `;
+                this.patientInfo.classList.add('active');
+            }
+
+            updateSources(sources) {
+                this.sourcesList.innerHTML = sources
+                    .map(source => `<div class="source-item">📄 ${this.escapeHtml(source)}</div>`)
+                    .join('');
+                this.sourcesSection.classList.add('active');
+            }
+
+            updateSessionDisplay() {
+                this.currentAgentEl.textContent = 
+                    this.currentAgent.charAt(0).toUpperCase() + this.currentAgent.slice(1);
+            }
+
+            setInputState(enabled) {
+                this.sendButton.disabled = !enabled;
+                this.messageInput.disabled = !enabled;
+                if (enabled) this.messageInput.focus();
+            }
+
+            scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new MedicalChatApp();
+        });
+    </script>
+</body>
+</html>
