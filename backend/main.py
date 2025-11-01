@@ -93,8 +93,10 @@ async def chat_endpoint(request: ChatRequest):
             session["patient_data"] = response["patient_data"]
             session["patient_name"] = response["patient_data"]["patient_name"]
         
-        if response.get("agent"):
-            session["current_agent"] = response["agent"]
+        # Track current agent
+        current_agent = response.get("agent", session.get("current_agent", "receptionist"))
+        session["current_agent"] = current_agent
+        session["session_id"] = request.session_id
         
         # Store conversation
         session["conversation_history"].append({
